@@ -49,7 +49,7 @@ Then in your `index.html`:
 Add this to your `index.html`:
 
 ```html
-<script src="//cdn.jsdelivr.net/pouchdb/{{site.version}}/pouchdb.min.js"></script>
+<script src="//cdn.jsdelivr.net/npm/pouchdb@{{site.version}}/dist/pouchdb.min.js"></script>
 ```
 
 {% include anchor.html title="Node.js" hash="nodejs" %}
@@ -65,6 +65,32 @@ Then in your JavaScript:
 ```js
 var PouchDB = require('pouchdb');
 ```
+
+{% include anchor.html title="With TypeScript" hash="typescript" %}
+
+Run this on the command line:
+
+```
+$ npm install pouchdb @types/pouchdb
+```
+
+In your `tsconfig.json` activate `allowSyntheticDefaultImports`:
+
+```json
+{
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true
+  }
+}
+```
+
+Then in your TypeScript:
+
+```typescript
+import PouchDB from 'pouchdb';
+```
+
+You can install a plugin (provided there is a [type definition for it in npm](https://www.npmjs.com/search?q=scope:types%20pouchdb)), import it in the same way and then pass the imported name to `PouchDB.plugin()` method just as you would do in JavaScript.
 
 {% include anchor.html title="Next" hash="next" %}
 

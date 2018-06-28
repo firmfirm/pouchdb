@@ -20,6 +20,10 @@ Plugin for CouchDB's authentication system.
 
 Allows decentralized authentication and access control per document, using asymmetric encryption.
 
+#### [PouchDB Collate](https://github.com/pouchdb/pouchdb/tree/master/packages/node_modules/pouchdb-collate)
+
+Collation functions for PouchDB map/reduce. Used by PouchDB map/reduce to maintain consistent [CouchDB collation ordering](https://wiki.apache.org/couchdb/View_collation).
+
 #### [Crypto Pouch](https://github.com/calvinmetcalf/crypto-pouch)
 
 Encrypt a PouchDB/CouchDB database.
@@ -159,6 +163,10 @@ An Express submodule with a CouchDB-style REST interface to PouchDB. Powers Pouc
 
 Server-side Express endpoint to deliver a stream from [PouchDB Replication Stream](https://github.com/nolanlawson/pouchdb-replication-stream).
 
+#### [Howler](https://github.com/redgeoff/couchdb-howler)
+
+Use web sockets to subscribe to CouchDB global changes
+
 #### [Pouch Websocket Sync](https://github.com/pgte/pouch-websocket-sync)
 
 Sync several PouchDBs through websockets. Supports reconnection, negotiation and authentication.
@@ -170,6 +178,10 @@ Consume a remote PouchDB stream. Goes well with [pouch-stream-server](https://gi
 #### [Pouch Stream Server](https://github.com/pgte/pouch-stream-server#readme)
 
 PouchDB stream server. Serves generic PouchDB object streams. Goes well with [pouch-remote-stream](https://github.com/pgte/pouch-remote-stream#readme) on the client.
+
+#### [Spiegel](https://github.com/redgeoff/spiegel)
+
+Scalable replication and change listening for CouchDB
 
 {% include anchor.html title="Framework adapters" hash="framework_adapters" %}
 
@@ -242,6 +254,10 @@ Redux middleware to sync a PouchDB database with the Redux state.
 #### [vue-pouch](https://github.com/qurateinc/vue-pouch)
 
 Syncs PouchDB data with Vue.js components using Mango Selectors
+
+#### [vue-pouch-db](https://github.com/QurateInc/vue-pouch-db)
+
+Vue Pouch DB is a VueJS Plugin that binds PouchDB with Vue and keeps a synchronised state with the database. Has support for Mango queries which are processed locally within the VuePouchDB state.
 
 
 {% include anchor.html title="Other languages" hash="Other languages" %}

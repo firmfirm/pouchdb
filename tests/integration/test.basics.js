@@ -8,15 +8,13 @@ adapters.forEach(function (adapter) {
 
     var dbs = {};
 
-    beforeEach(function (done) {
+    beforeEach(function () {
       dbs.name = testUtils.adapterUrl(adapter, 'testdb');
-      testUtils.cleanup([dbs.name], done);
     });
 
-    after(function (done) {
+    afterEach(function (done) {
       testUtils.cleanup([dbs.name], done);
     });
-
 
     it('Create a pouch without new keyword', function () {
       /* jshint newcap:false */
@@ -98,9 +96,51 @@ adapters.forEach(function (adapter) {
     it('Get invalid id', function () {
       var db = new PouchDB(dbs.name);
       return db.get(1234).then(function () {
-        throw 'show not be here';
+        throw new Error('should not be here');
       }).catch(function (err) {
         should.exist(err);
+      });
+    });
+
+    it('Missing doc should contain ID in error object', function () {
+      var db = new PouchDB(dbs.name);
+      return db.get('abc-123').then(function () {
+        throw new Error('should not be here');
+      }).catch(function (err) {
+        should.exist(err);
+        err.docId.should.equal('abc-123');
+      });
+    });
+
+    it('PUTed Conflicted doc should contain ID in error object', function () {
+      var db = new PouchDB(dbs.name);
+      var savedDocId;
+      return db.post({}).then(function (info) {
+        savedDocId = info.id;
+        return db.put({
+          _id: savedDocId,
+        });
+      }).then(function () {
+        throw new Error('should not be here');
+      }).catch(function (err) {
+        err.should.have.property('status', 409);
+        err.docId.should.equal(savedDocId);
+      });
+    });
+
+    it('POSTed Conflicted doc should contain ID in error object', function () {
+      var db = new PouchDB(dbs.name);
+      var savedDocId;
+      return db.post({}).then(function (info) {
+        savedDocId = info.id;
+        return db.post({
+          _id: savedDocId,
+        });
+      }).then(function () {
+        throw new Error('should not be here');
+      }).catch(function (err) {
+        err.should.have.property('status', 409);
+        err.docId.should.equal(savedDocId);
       });
     });
 
@@ -285,6 +325,9 @@ adapters.forEach(function (adapter) {
     });
 
     it('Remove doc twice with specified id', function () {
+      if (testUtils.isIE()) {
+        return Promise.resolve();
+      }
       var db = new PouchDB(dbs.name);
       return db.put({_id: 'specifiedId', test: 'somestuff'}).then(function () {
         return db.get('specifiedId');
@@ -484,7 +527,6 @@ adapters.forEach(function (adapter) {
       var db = new PouchDB(dbs.name);
       db.bulkDocs({ docs: bad_docs }, function (err) {
         err.name.should.equal('doc_validation');
-        err.status.should.equal(testUtils.errors.DOC_VALIDATION.status);
         err.message.should.equal(testUtils.errors.DOC_VALIDATION.message +
                                  ': _zing',
                                  'correct error message returned');
@@ -781,18 +823,6 @@ adapters.forEach(function (adapter) {
       });
     });
 
-    it('db.info should give correct name', function (done) {
-      // CouchDB Master uses random names
-      if (testUtils.isCouchMaster()) {
-        return done();
-      }
-      var db = new PouchDB(dbs.name);
-      db.info().then(function (info) {
-        info.db_name.should.equal('testdb');
-        done();
-      });
-    });
-
     it('db.info should give auto_compaction = false (#2744)', function () {
       var db = new PouchDB(dbs.name, { auto_compaction: false});
       return db.info().then(function (info) {
@@ -897,41 +927,6 @@ adapters.forEach(function (adapter) {
       }, function (err) {
         should.exist(err);
         done();
-      });
-    });
-
-    it('issue 2779, correct behavior for undeleting', function () {
-
-      if (testUtils.isCouchMaster()) {
-        return true;
-      }
-
-      var db = new PouchDB(dbs.name);
-      var rev;
-
-      function checkNumRevisions(num) {
-        return db.get('foo', {
-          open_revs: 'all',
-          revs: true
-        }).then(function (fullDocs) {
-          fullDocs[0].ok._revisions.ids.should.have.length(num);
-        });
-      }
-
-      return db.put({_id: 'foo'}).then(function (resp) {
-        rev = resp.rev;
-        return checkNumRevisions(1);
-      }).then(function () {
-        return db.remove('foo', rev);
-      }).then(function () {
-        return checkNumRevisions(2);
-      }).then(function () {
-        return db.allDocs({keys: ['foo']});
-      }).then(function (res) {
-        rev = res.rows[0].value.rev;
-        return db.put({_id: 'foo', _rev: rev});
-      }).then(function () {
-        return checkNumRevisions(3);
       });
     });
 
@@ -1077,6 +1072,14 @@ adapters.forEach(function (adapter) {
           err.message.should.equal('database is closed');
         });
       });
+    });
+
+    it('7259 should have "this" keyword properly scoped', function () {
+      var doc = { _id: 'foo' };
+      var db = new PouchDB(dbs.name);
+      return db.put(doc).then(function () {
+        return doc._id;
+      }).then(db.get);
     });
 
     if (adapter === 'local') {

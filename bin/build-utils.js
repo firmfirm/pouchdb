@@ -1,12 +1,7 @@
 'use strict';
 
 var DEV_MODE = process.env.CLIENT === 'dev';
-var TRAVIS = process.env.TRAVIS;
 
-var lie = require('lie');
-if (typeof Promise === 'undefined') {
-  global.Promise = lie; // required for denodeify in node 0.10
-}
 var path = require('path');
 var denodeify = require('denodeify');
 var browserify = require('browserify');
@@ -16,7 +11,8 @@ var fs = require('fs');
 var writeFileAsync = denodeify(fs.writeFile);
 var renameAsync = denodeify(fs.rename);
 var streamToPromise = require('stream-to-promise');
-var spawn = require('child_process').spawn;
+
+var UglifyJS = require("uglify-js");
 
 function addPath(pkgName, otherPath) {
   return path.resolve('packages/node_modules/' + pkgName, otherPath);
@@ -28,26 +24,13 @@ function writeFile(filename, contents) {
     return renameAsync(tmp, filename);
   }).then(function () {
     console.log('  \u2713' + ' wrote ' +
-      filename.match(/packages[\/\\]node_modules[\/\\]\S*?[\/\\].*/)[0]);
+      filename.match(/packages[/\\]node_modules[/\\]\S*?[/\\].*/)[0]);
   });
 }
 
-// do uglify in a separate process for better perf
 function doUglify(pkgName, code, prepend, fileOut) {
-  if (DEV_MODE || TRAVIS) { // skip uglify in "npm run dev" mode and on Travis
-    return Promise.resolve();
-  }
-  var binPath = require.resolve('uglify-js/bin/uglifyjs');
-  var args = [binPath, '-c', '-m', 'warnings=false', '-'];
-
-  var child = spawn(process.execPath, args, {stdio: 'pipe'});
-  child.stdin.setEncoding('utf-8');
-  child.stdin.write(code);
-  child.stdin.end();
-  return streamToPromise(child.stdout).then(function (min) {
-    min = prepend + min;
-    return writeFile(addPath(pkgName, fileOut), min);
-  });
+  var miniCode = prepend + UglifyJS.minify(code).code;
+  return writeFile(addPath(pkgName, fileOut), miniCode);
 }
 
 var browserifyCache = {};

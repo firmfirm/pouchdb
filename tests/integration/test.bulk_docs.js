@@ -25,15 +25,13 @@ adapters.forEach(function (adapter) {
 
     var dbs = {};
 
-    beforeEach(function (done) {
+    beforeEach(function () {
       dbs.name = testUtils.adapterUrl(adapter, 'testdb');
-      testUtils.cleanup([dbs.name], done);
     });
 
-    after(function (done) {
+    afterEach(function (done) {
       testUtils.cleanup([dbs.name], done);
     });
-
 
     var authors = [
       {name: 'Dale Harvey', commits: 253},
@@ -329,28 +327,7 @@ adapters.forEach(function (adapter) {
       });
     });
 
-    it('bulk docs update then delete then update', function () {
-      var db = new PouchDB(dbs.name);
-      var docs= [{_id: '1'}];
-      return db.bulkDocs(docs).then(function (res) {
-        should.not.exist(res[0].error, 'no error');
-        docs[0]._rev = res[0].rev;
-        return db.bulkDocs(docs);
-      }).then(function (res) {
-        should.not.exist(res[0].error, 'no error');
-        docs[0]._rev = res[0].rev;
-        docs[0]._deleted = true;
-        return db.bulkDocs(docs);
-      }).then(function (res) {
-        should.not.exist(res[0].error, 'no error');
-        docs[0]._rev = res[0].rev;
-        return db.bulkDocs(docs);
-      }).then(function (res) {
-        should.not.exist(res[0].error, 'no error');
-      });
-    });
-
-    it('bulk_docs delete then update then undelete', function () {
+    it('bulk_docs delete then undelete', function () {
       var db = new PouchDB(dbs.name);
       var doc = {_id: '1'};
       return db.bulkDocs([doc]).then(function (res) {
@@ -360,11 +337,7 @@ adapters.forEach(function (adapter) {
         return db.bulkDocs([doc]);
       }).then(function (res) {
         should.not.exist(res[0].error, 'should not be an error 2');
-        doc._rev = res[0].rev;
-        return db.bulkDocs([doc]);
-      }).then(function (res) {
-        should.not.exist(res[0].error, 'should not be an error 3');
-        doc._rev = res[0].rev;
+        delete doc._rev;
         doc._deleted = false;
         return db.bulkDocs([doc]);
       });
@@ -633,7 +606,7 @@ adapters.forEach(function (adapter) {
 
       db.bulkDocs({docs: docsA, new_edits: false}, function (err) {
         should.not.exist(err);
-        db.changes().on('complete', function (result) {
+        db.changes({return_docs: true}).on('complete', function (result) {
           var ids = result.results.map(function (row) {
             return row.id;
           });
@@ -645,6 +618,7 @@ adapters.forEach(function (adapter) {
           db.bulkDocs({docs: docsB, new_edits: false}, function (err) {
             should.not.exist(err);
             db.changes({
+              return_docs: true,
               since: update_seq
             }).on('complete', function (result) {
               var ids = result.results.map(function (row) {
@@ -971,7 +945,7 @@ adapters.forEach(function (adapter) {
       var docid = "mydoc";
 
       function uuid() {
-          return testUtils.uuid(32, 16).toLowerCase();
+          return testUtils.rev();
       }
 
       // create a few of rando, good revisions
@@ -1020,12 +994,12 @@ adapters.forEach(function (adapter) {
     });
 
     it('4204 respect revs_limit', function () {
+      if (testUtils.isIE()) {
+        return Promise.resolve();
+      }
       var db = new PouchDB(dbs.name);
 
       // simulate 5000 normal commits with two conflicts at the very end
-      function uuid() {
-        return testUtils.uuid(32, 16).toLowerCase();
-      }
 
       var isSafari = (typeof process === 'undefined' || process.browser) &&
         /Safari/.test(window.navigator.userAgent) &&
@@ -1036,9 +1010,9 @@ adapters.forEach(function (adapter) {
       var uuids = [];
 
       for (var i = 0; i < numRevs - 1; i++) {
-        uuids.push(uuid());
+        uuids.push(testUtils.rev());
       }
-      var conflict1 = 'a' + uuid();
+      var conflict1 = 'a' + testUtils.rev();
 
       var doc1 = {
         _id: 'doc',
@@ -1068,7 +1042,7 @@ adapters.forEach(function (adapter) {
 
       // simulate 5000 normal commits with two conflicts at the very end
       function uuid() {
-        return testUtils.uuid(32, 16).toLowerCase();
+        return testUtils.rev();
       }
 
       var numRevs = 5000;

@@ -18,14 +18,13 @@ testUtils.isCouchMaster = function () {
     testUtils.params().SERVER === 'couchdb-master';
 };
 
-testUtils.isSyncGateway = function () {
-  return 'SERVER' in testUtils.params() &&
-    testUtils.params().SERVER === 'sync-gateway';
-};
-
-testUtils.isExpressRouter = function () {
-  return 'SERVER' in testUtils.params() &&
-    testUtils.params().SERVER === 'pouchdb-express-router';
+testUtils.isIE = function () {
+  var ua = (typeof navigator !== 'undefined' && navigator.userAgent) ?
+      navigator.userAgent.toLowerCase() : '';
+  var isIE = ua.indexOf('msie') !== -1;
+  var isTrident = ua.indexOf('trident') !== -1;
+  var isEdge = ua.indexOf('edge') !== -1;
+  return (isIE || isTrident || isEdge);
 };
 
 testUtils.params = function () {
@@ -58,7 +57,8 @@ testUtils.couchHost = function () {
   }
 
   if ('couchHost' in testUtils.params()) {
-    return testUtils.params().couchHost;
+    // Remove trailing slash from url if the user defines one
+    return testUtils.params().couchHost.replace(/\/$/, '');
   }
 
   return 'http://localhost:5984';
@@ -70,15 +70,15 @@ testUtils.readBlob = function (blob, callback) {
   } else {
     var reader = new FileReader();
     reader.onloadend = function () {
-      
+
       var binary = "";
       var bytes = new Uint8Array(this.result || '');
       var length = bytes.byteLength;
-      
+
       for (var i = 0; i < length; i++) {
         binary += String.fromCharCode(bytes[i]);
       }
-      
+
       callback(binary);
     };
     reader.readAsArrayBuffer(blob);
@@ -107,9 +107,7 @@ testUtils.adapterUrl = function (adapter, name) {
 
   // CouchDB master has problems with cycling databases rapidly
   // so give tests seperate names
-  if (testUtils.isCouchMaster()) {
-    name += '_' + Date.now();
-  }
+  name += '_' + Date.now();
 
   if (adapter === 'http') {
     return testUtils.couchHost() + '/' + name;
@@ -192,8 +190,9 @@ testUtils.putTree = function (db, tree, callback) {
 };
 
 testUtils.isCouchDB = function (cb) {
-  testUtils.ajax({url: testUtils.couchHost() + '/' }, function (err, res) {
-    // either CouchDB or pouchdb-server qualify here
+  PouchDB.fetch(testUtils.couchHost(), {}).then(function (response) {
+    return response.json();
+  }).then(function (res) {
     cb('couchdb' in res || 'express-pouchdb' in res);
   });
 };
@@ -276,9 +275,11 @@ testUtils.atob = pouchUtils.atob;
 testUtils.Promise = pouchUtils.Promise;
 testUtils.ajax = PouchForCoverage.ajax;
 testUtils.uuid = pouchUtils.uuid;
+testUtils.rev = pouchUtils.rev;
 testUtils.parseUri = pouchUtils.parseUri;
 testUtils.errors = PouchForCoverage.Errors;
 testUtils.assign = pouchUtils.assign;
+testUtils.generateReplicationId = pouchUtils.generateReplicationId;
 
 testUtils.makeBlob = function (data, type) {
   if (typeof process !== 'undefined' && !process.browser) {

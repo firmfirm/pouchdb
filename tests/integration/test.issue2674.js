@@ -13,7 +13,7 @@ adapterPairs.forEach(function (adapters) {
 
     var dbs = {};
 
-    beforeEach(function (done) {
+    beforeEach(function () {
       dbs.name = testUtils.adapterUrl(adapters[0], 'testdb');
       dbs.secondDB = testUtils.adapterUrl(adapters[0], 'test_repl_remote');
       //
@@ -24,16 +24,17 @@ adapterPairs.forEach(function (adapters) {
       // truly remote.
       dbs.thirdDB = testUtils.adapterUrl(adapters[0], 'test_slash_ids');
       dbs.fourthDB = testUtils.adapterUrl(adapters[1], 'test_slash_ids_remote');
-      testUtils.cleanup([dbs.name, dbs.secondDB, dbs.thirdDB, dbs.fourthDB],
-        done);
     });
 
-    after(function (done) {
+    afterEach(function (done) {
       testUtils.cleanup([dbs.name, dbs.secondDB, dbs.thirdDB, dbs.fourthDB],
         done);
     });
 
     it('Should correctly synchronize attachments (#2674)', function () {
+      if (testUtils.isIE()) {
+        return Promise.resolve();
+      }
 // 1. So I ran client app on two browsers (let’s call them A and B).
 // 2. Then on client A I created plain document (without any attachments).
 // 3. After that I put two attachments one by one by using putAttachment method.
